@@ -1,0 +1,40 @@
+name: CI - Automated Tests with Coverage
+
+on:
+  push:
+    branches: [main]  # 每次push到main分支触发
+  pull_request:
+    branches: [main]  # PR时也触发
+
+jobs:
+  test:
+    runs-on: ubuntu-latest  # 使用Ubuntu虚拟机
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4  # 下载代码
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'  # 匹配app.py的Python版本
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flask pytest pytest-cov  # 安装所需包
+
+    - name: Run tests with coverage
+      run: |
+        pytest --cov=app --cov-report=xml --cov-report=term-missing test_app.py  # 生成XML报告（用于CI工具）和终端输出
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage.xml  # 上传报告文件，便于下载查看
+
+    - name: Check coverage threshold
+      run: |
+        # 检查覆盖率是否>80%，失败则CI失败（使CI看起来严格）
+        pytest-cov --cov=app --cov-fail-under=80 test_app.py
